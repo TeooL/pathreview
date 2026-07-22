@@ -17,7 +17,7 @@ This issue affects the /api/health api endpoint. Currently the endpoint returns 
 
 ## Week 8 — Reproduction & solution planning
 
-**Reproduction commit link:** [add after committing this JOURNAL.md/PLAN.md update]
+**Reproduction commit link:** https://github.com/ascherj/pathreview/commit/d38545b0484d571711e56be5872a4daf1edf3e43
 
 **Reproduction summary:**
 Docker wasn't available in my sandbox to run the full Postgres/Redis stack, so I reproduced at the code level: `api/routes/health.py` hardcodes `safety_events_last_hour` to `0` (the "count" block at lines 75-79 is a placeholder — the comment literally says "this would be populated by actual safety event logging"). A `grep` across the repo confirms `safety/monitoring.py`'s `SafetyMonitor` class (which already has working `log_event()`/`get_event_count()` methods backed by Redis) is never imported or instantiated anywhere else in the app. I wrote a standalone script that imports the real `SafetyMonitor` unmodified, logs several safety events against a fake in-memory Redis, and confirms `get_event_count` correctly reports 4 events — while the value `/api/health` actually returns for that field stays `0`, proving the endpoint is fully disconnected from real safety event data.
