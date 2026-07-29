@@ -1,5 +1,7 @@
 """Tests for pii_scrubber.py"""
 
+from unittest.mock import Mock
+
 import pytest
 
 from safety.pii_scrubber import PIIScrubber
@@ -252,3 +254,29 @@ class TestPIIScrubber:
 
         # Should be minimal or no detections
         # (version number shouldn't be flagged as SSN)
+
+    def test_logs_event_to_monitor_when_pii_detected(self, scrubber):
+        """Test a SafetyMonitor is notified when PII is detected."""
+        monitor = Mock()
+        text = "Contact me at john.doe@example.com"
+
+        scrubber.detect(text, monitor=monitor)
+
+        monitor.log_event.assert_called_once()
+        event_type, details = monitor.log_event.call_args[0]
+        assert event_type == "pii_detected"
+        assert details["count"] >= 1
+
+    def test_does_not_log_event_when_no_pii(self, scrubber):
+        """Test a SafetyMonitor is not notified when no PII is found."""
+        monitor = Mock()
+
+        scrubber.detect("Just a plain sentence with no PII in it.", monitor=monitor)
+
+        monitor.log_event.assert_not_called()
+
+    def test_monitor_is_optional(self, scrubber):
+        """Test detect still works with no monitor passed."""
+        detected = scrubber.detect("Contact me at john.doe@example.com")
+
+        assert len(detected) >= 1

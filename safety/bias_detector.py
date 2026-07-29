@@ -1,7 +1,12 @@
 """Bias detection in generated feedback."""
 
 import re
+from typing import TYPE_CHECKING
+
 import structlog
+
+if TYPE_CHECKING:
+    from safety.monitoring import SafetyMonitor
 
 logger = structlog.get_logger()
 
@@ -25,11 +30,12 @@ class BiasDetector:
     ]
 
     @staticmethod
-    def detect_bias(text: str) -> tuple[bool, str]:
+    def detect_bias(text: str, monitor: "SafetyMonitor | None" = None) -> tuple[bool, str]:
         """Detect biased language in feedback.
 
         Args:
             text: Feedback text
+            monitor: Optional SafetyMonitor to record a bias_detected event
 
         Returns:
             Tuple of (is_biased, reason)
@@ -39,6 +45,8 @@ class BiasDetector:
             if re.search(pattern, text, re.IGNORECASE):
                 reason = "Dismissive language about educational background"
                 logger.warning("bias_detected", reason=reason)
+                if monitor is not None:
+                    monitor.log_event("bias_detected", {"reason": reason})
                 return True, reason
 
         # Check for demographic assumptions
@@ -46,6 +54,8 @@ class BiasDetector:
             if re.search(pattern, text, re.IGNORECASE):
                 reason = "Demographic assumptions detected"
                 logger.warning("bias_detected", reason=reason)
+                if monitor is not None:
+                    monitor.log_event("bias_detected", {"reason": reason})
                 return True, reason
 
         return False, ""

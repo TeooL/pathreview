@@ -1,7 +1,12 @@
 """Content filter for generated feedback."""
 
 import re
+from typing import TYPE_CHECKING
+
 import structlog
+
+if TYPE_CHECKING:
+    from safety.monitoring import SafetyMonitor
 
 logger = structlog.get_logger()
 
@@ -20,11 +25,12 @@ class ContentFilter:
     ]
 
     @staticmethod
-    def filter(text: str) -> tuple[str, bool]:
+    def filter(text: str, monitor: "SafetyMonitor | None" = None) -> tuple[str, bool]:
         """Filter harmful content from text.
 
         Args:
             text: Text to filter
+            monitor: Optional SafetyMonitor to record a content_filtered event
 
         Returns:
             Tuple of (filtered_text, was_filtered)
@@ -38,5 +44,8 @@ class ContentFilter:
                 was_filtered = True
                 # Replace harmful phrases with neutral text
                 filtered_text = re.sub(pattern, "[CONTENT REMOVED]", filtered_text, flags=re.IGNORECASE)
+
+        if was_filtered and monitor is not None:
+            monitor.log_event("content_filtered", {})
 
         return filtered_text, was_filtered

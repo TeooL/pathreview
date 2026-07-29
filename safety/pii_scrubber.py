@@ -1,7 +1,12 @@
 """PII detection and scrubbing."""
 
 import re
+from typing import TYPE_CHECKING
+
 import structlog
+
+if TYPE_CHECKING:
+    from safety.monitoring import SafetyMonitor
 
 logger = structlog.get_logger()
 
@@ -34,11 +39,12 @@ class PIIScrubber:
 
         return scrubbed
 
-    def detect(self, text: str) -> list[dict]:
+    def detect(self, text: str, monitor: "SafetyMonitor | None" = None) -> list[dict]:
         """Detect PII in text.
 
         Args:
             text: Text to analyze
+            monitor: Optional SafetyMonitor to record a pii_detected event
 
         Returns:
             List of detected PII with type, value, and position
@@ -55,5 +61,8 @@ class PIIScrubber:
                 })
 
         logger.info("pii_detected", count=len(detected), types=len(set(d["type"] for d in detected)))
+
+        if detected and monitor is not None:
+            monitor.log_event("pii_detected", {"count": len(detected)})
 
         return detected
