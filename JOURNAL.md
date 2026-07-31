@@ -33,7 +33,7 @@ Docker wasn't available in my sandbox to run the full Postgres/Redis stack, so I
 
 ## Week 9 — Solution building & PR submission
 
-### Check-in 1 (mid-week)
+### Check-in 1 (mid-week — Wednesday, 2026-07-29)
 
 **Current progress:**
 All 5 sub-tasks from PLAN.md are implemented, in order of dependency rather than the original list order:
@@ -51,9 +51,9 @@ Still no `docker` available in my current environment, so the real-service verif
 
 ---
 
-### Check-in 2 (end of week)
+### Check-in 2 (submission — Sunday, 2026-08-02)
 
-**PR link:** [to be added when opened]
+**PR link:** https://github.com/TeooL/pathreview/pull/1
 
 **Branch:** `fix/68-add-safety-event-counter`
 
@@ -67,4 +67,4 @@ Still no `docker` available in my current environment, so the real-service verif
 
 **Self-review confirmation:** [x] make check passes (no new issues vs. documented pre-existing baseline)  [x] make test-unit passes (same 53 pre-existing failures, all new tests green)
 
-**Draft PR feedback received from:** none yet
+**Draft PR feedback received from:** None
