@@ -68,3 +68,34 @@ Still no `docker` available in my current environment, so the real-service verif
 **Self-review confirmation:** [x] make check passes (no new issues vs. documented pre-existing baseline)  [x] make test-unit passes (same 53 pre-existing failures, all new tests green)
 
 **Draft PR feedback received from:** None
+
+## Week 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [X] No — still awaiting review
+
+**Summary of feedback:**
+No review came in
+
+**How you responded:**
+N/A — no feedback to respond to yet.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Understanding the codebase as a whole and figuring out what was actually related to the issue was harder than I expected. PathReview spans several subsystems (api, ingestion, rag, agent, safety), and issue #68 turned out to hinge on a class — `SafetyMonitor` — that already existed with working methods but wasn't imported or called anywhere else in the app. Confirming that meant grepping across the whole tree rather than just reading the one file the issue pointed at. Reproducing the bug was also difficult: I didn't have Docker available, so I couldn't just run the app and hit the endpoint. I had to reproduce it at the code level instead, writing a standalone script that imported the real `SafetyMonitor` against a fake Redis to prove the endpoint was returning a hardcoded value regardless of real events.
+
+**What did you learn about working in a large codebase?**
+I learned there's a lot to check before a PR is actually done beyond just "does my feature work" — conventions (branch naming, commit message format, PR template), linting and formatting rules, type checking, and making sure my tests actually match the patterns already used in the test suite. I also had to learn to tell apart failures I caused from failures that were already there before I touched anything, which meant establishing a baseline before making changes instead of assuming a clean slate.
+
+**How did AI tools help — and where did they fall short?**
+AI tools helped me understand the codebase faster than I could have by reading it alone — for example, grepping across the whole repo to confirm `SafetyMonitor` was never actually called anywhere outside its own file, which is what turned this from "add a number to an endpoint" into "wire up dead infrastructure." It was also useful for reproducing the issue (writing the standalone script that logged fake events through the real `SafetyMonitor` against a mock Redis) and for writing tests once I knew what needed to be covered, like `test_safety_monitor.py` and the monitor-wiring cases added to `test_bias_detector.py` and the other detector test files. Where it fell short was on my end more than the tool's: I sometimes told it what to do and let it produce a working result without fully understanding *how* it got there.
+
+**What would you do differently if you started over?**
+I'd try to understand more of how the AI was helping me at each step instead of just telling it to do something and moving on once it worked. For instance, when it decided to make the new `monitor` parameter optional (defaulting to `None`) across all five detector modules so existing tests wouldn't break, I accepted that call without first working through why backward compatibility mattered there myself. Engaging more with the "why" behind decisions like that would help me build my own understanding of the codebase, not just get a working PR.
+
+**What are you most proud of from this module?**
+Tackling an open source contribution for the first time — going from issue #68 in someone else's repo to an actual pull request ([PR #1](https://github.com/TeooL/pathreview/pull/1)) is something I'd always heard about but didn't know how to approach. This class walked me through the process end to end, and I'm excited to make more contributions to other projects in the future.
