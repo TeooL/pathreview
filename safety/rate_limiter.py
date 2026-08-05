@@ -1,8 +1,13 @@
 """Rate limiting with rolling window."""
 
-import redis
 import time
+from typing import TYPE_CHECKING
+
+import redis
 import structlog
+
+if TYPE_CHECKING:
+    from safety.monitoring import SafetyMonitor
 
 logger = structlog.get_logger()
 
@@ -10,13 +15,15 @@ logger = structlog.get_logger()
 class RateLimiter:
     """Rate limiter using Redis sorted sets for rolling window."""
 
-    def __init__(self, redis_client: redis.Redis):
+    def __init__(self, redis_client: redis.Redis, monitor: "SafetyMonitor | None" = None):
         """Initialize rate limiter.
 
         Args:
             redis_client: Redis client
+            monitor: Optional SafetyMonitor to record rate_limited events
         """
         self.redis = redis_client
+        self.monitor = monitor
 
     def check_rate_limit(self, identifier: str, limit: int,
                         window_seconds: int = 60) -> tuple[bool, int]:
@@ -55,6 +62,8 @@ class RateLimiter:
                 # Rate limit exceeded
                 logger.warning("rate_limit_exceeded", identifier=identifier,
                              limit=limit)
+                if self.monitor is not None:
+                    self.monitor.log_event("rate_limited", {"identifier": identifier})
                 return False, 0
 
         except Exception as e:

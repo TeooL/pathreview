@@ -1,5 +1,7 @@
 """Tests for bias_detector.py"""
 
+from unittest.mock import Mock
+
 import pytest
 
 from safety.bias_detector import BiasDetector
@@ -274,3 +276,33 @@ class TestBiasDetector:
 
         assert is_biased_obs is False  # Factual
         assert is_biased_ass is True  # Biased assumption
+
+    def test_logs_event_to_monitor_when_biased(self):
+        """Test a SafetyMonitor is notified when bias is detected."""
+        monitor = Mock()
+        text = "bootcamp training is inadequate for professional development"
+
+        BiasDetector.detect_bias(text, monitor=monitor)
+
+        monitor.log_event.assert_called_once()
+        event_type, details = monitor.log_event.call_args[0]
+        assert event_type == "bias_detected"
+        assert details["reason"]
+
+    def test_does_not_log_event_when_not_biased(self):
+        """Test a SafetyMonitor is not notified when no bias is detected."""
+        monitor = Mock()
+        text = "your resume shows strong React and Python experience"
+
+        BiasDetector.detect_bias(text, monitor=monitor)
+
+        monitor.log_event.assert_not_called()
+
+    def test_monitor_is_optional(self):
+        """Test detect_bias still works with no monitor passed (backward compatible)."""
+        text = "bootcamp training is inadequate for professional development"
+
+        is_biased, reason = BiasDetector.detect_bias(text)
+
+        assert is_biased is True
+        assert reason != ""

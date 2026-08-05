@@ -293,3 +293,37 @@ class TestRateLimiter:
         # Should work with API key
         call_args = mock_redis.zremrangebyscore.call_args
         assert api_key in call_args[0][0]
+
+    def test_logs_event_to_monitor_when_rate_limited(self, mock_redis):
+        """Test a SafetyMonitor is notified when the rate limit is exceeded."""
+        monitor = Mock()
+        limiter = RateLimiter(mock_redis, monitor=monitor)
+        mock_redis.zremrangebyscore = Mock()
+        mock_redis.zcard = Mock(return_value=5)  # Already at limit
+
+        limiter.check_rate_limit("user123", limit=5)
+
+        monitor.log_event.assert_called_once_with("rate_limited", {"identifier": "user123"})
+
+    def test_does_not_log_event_when_allowed(self, mock_redis):
+        """Test a SafetyMonitor is not notified when the request is allowed."""
+        monitor = Mock()
+        limiter = RateLimiter(mock_redis, monitor=monitor)
+        mock_redis.zremrangebyscore = Mock()
+        mock_redis.zcard = Mock(return_value=0)
+        mock_redis.zadd = Mock()
+        mock_redis.expire = Mock()
+
+        limiter.check_rate_limit("user123", limit=10)
+
+        monitor.log_event.assert_not_called()
+
+    def test_monitor_is_optional(self, mock_redis):
+        """Test check_rate_limit still works with no monitor passed."""
+        limiter = RateLimiter(mock_redis)
+        mock_redis.zremrangebyscore = Mock()
+        mock_redis.zcard = Mock(return_value=5)
+
+        allowed, remaining = limiter.check_rate_limit("user123", limit=5)
+
+        assert allowed is False
